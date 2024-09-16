@@ -44,10 +44,8 @@ module "msk-sg" {
     vpc = {
       create = false
       id     = coalesce(
-        coalescelist(
-          data.aws_vpcs.msk-vpc[each.key].ids,
-          data.aws_vpcs.default-msk-vpc[each.key].ids,
-        ),
+        try(tostring(data.aws_vpcs.msk-vpc[each.key].ids[0]), null),
+        try(tostring(data.aws_vpcs.default-msk-vpc[each.key].ids[0]), null),
         toset(
           [
             try(
@@ -63,6 +61,18 @@ module "msk-sg" {
         merge(
           {
             name = format("msk-%s", each.key)
+            vpc_id = coalesce(
+              try(tostring(data.aws_vpcs.msk-vpc[each.key].ids[0]), null),
+              try(tostring(data.aws_vpcs.default-msk-vpc[each.key].ids[0]), null),
+              toset(
+                [
+                  try(
+                    each.value["common"]["vpc_config"]["vpc_id"],
+                    null
+                  )
+                ]
+              )
+            )
           },
           {
             "egress" = [

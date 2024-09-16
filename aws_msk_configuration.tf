@@ -1,9 +1,3 @@
-locals {
-  default_msk_configuration = <<PROPERTIES
-auto.create.topics.enable = true
-delete.topic.enable = true
-PROPERTIES
-}
 #
 # Deploy AWS MSK Configuration
 #
@@ -21,5 +15,5 @@ resource "aws_msk_configuration" "msk-config" {
   )
 
   name              = each.key
-  server_properties = local.default_msk_configuration
+  server_properties = each.value["cluster"]["msk_configuration"]
 }

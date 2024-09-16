@@ -67,28 +67,23 @@ resource "aws_msk_cluster" "msk-cluster" {
     ) : []
     
     content {
-      arn      = configuration_info.value["arn"]
+      arn      = coalesce(configuration_info.value["arn"], aws_msk_configuration.msk-config[each.key].arn)
       revision = configuration_info.value["revision"]
     }
   }
 
   dynamic "encryption_info" {
-    for_each = try(
-      coalesce(
-        each.value["cluster"]["encryption_info"],
-        {}
-      ),
-      {}
-    )
+    for_each = each.value["cluster"]["encryption_info"] != null ? toset(
+      [
+        each.value["cluster"]["encryption_info"]
+      ]
+    ) : []
     content {
-      dynamic "encryption_in_transit" {
-        for_each = try(coalesce(encryption_info.value["encryption_in_transit"], {}), {})
-        content {
-          client_broker = encryption_in_transit.value["client_broker"]
-          in_cluster    = encryption_in_transit.value["in_cluster"]
-        }
+      encryption_in_transit {
+        client_broker = try(encryption_info.value["encryption_in_transit"]["client_broker"], null)
+        in_cluster    = try(encryption_info.value["encryption_in_transit"]["in_cluster"], null)
       }
-      encryption_at_rest_kms_key_arn = encryption_info.value["encryption_at_rest_kms_key_arn"]
+      encryption_at_rest_kms_key_arn = coalesce(encryption_info.value["encryption_at_rest_kms_key_arn"], module.kms.kms_key[format("msk-%s", each.key)].arn)
     }
   }
 
@@ -99,20 +94,20 @@ resource "aws_msk_cluster" "msk-cluster" {
   #* length(each.value["cluster"]["broker_node_group_info"]["client_subnets"])
 
   dynamic "open_monitoring" {
-    for_each = try(coalesce(each.value["open_monitoring"], {}), {})
+    for_each = try(coalesce(each.value["cluster"]["open_monitoring"], {}), {})
     content {
       prometheus {
 
         dynamic "jmx_exporter" {
           for_each = open_monitoring.value["jmx_exporter"]
           content {
-            enabled_in_broker = jmx_exporter.value["enabled_in_broker"]
+            enabled_in_broker = jmx_exporter.value
           }
         }
         dynamic "node_exporter" {
           for_each = open_monitoring.value["node_exporter"]
           content {
-            enabled_in_broker = node_exporter.value["enabled_in_broker"]
+            enabled_in_broker = node_exporter.value
           }
         }
 
@@ -121,33 +116,28 @@ resource "aws_msk_cluster" "msk-cluster" {
   }
 
   dynamic "logging_info" {
-    for_each = try(coalesce(each.value["logging_info"], {}), {})
+    for_each = coalesce(each.value["cluster"]["logging_info"], {})
     content {
       broker_logs {
 
-        dynamic "cloudwatch_logs" {
-          for_each = try(coalesce(logging_info.value["broker_logs"]["cloudwatch_logs"], {}), {})
-          content {
-            enabled   = cloudwatch_logs.value["enabled"]
-            log_group = cloudwatch_logs.value["log_group"]
-          }
-        }
-        dynamic "firehose" {
-          for_each = try(coalesce(logging_info.value["broker_logs"]["firehose"], {}), {})
-          content {
-            enabled         = firehose.value["enabled"]
-            delivery_stream = firehose.value["log_group"]
-          }
-        }
-        dynamic "s3" {
-          for_each = try(coalesce(logging_info.value["broker_logs"]["s3"], {}), {})
-          content {
-            enabled         = s3.value["enabled"]
-            bucket          = s3.value["bucket"]
-            prefix          = s3.value["prefix"]
-          }
+        # CloudWatch Logs
+        cloudwatch_logs {
+          enabled   = coalesce(logging_info.value["cloudwatch_logs"]["enabled"], false)
+          log_group = lookup(logging_info.value["cloudwatch_logs"], "log_group", null)
         }
 
+        # Firehose
+        firehose {
+          enabled         = coalesce(logging_info.value["firehose"]["enabled"], false)
+          delivery_stream = lookup(logging_info.value["firehose"], "delivery_stream", null)
+        }
+
+        # S3
+        s3 {
+          enabled = coalesce(logging_info.value["s3"]["enabled"], false)
+          bucket  = lookup(logging_info.value["s3"], "bucket", null)
+          prefix  = lookup(logging_info.value["s3"], "prefix", null)
+        }
       }
     }
   }
@@ -166,19 +156,6 @@ resource "aws_msk_cluster" "msk-cluster" {
     #############
     content {
       az_distribution = broker_node_group_info.value["az_distribution"]
-      connectivity_info {
-        vpc_connectivity {
-          client_authentication {
-            sasl {
-              iam   = true
-              scram = true
-            }
-          }
-        }
-        public_access {
-          type = "DISABLED"
-        }
-      }
 
       dynamic "connectivity_info" {
         for_each = try(coalesce(broker_node_group_info.value["connectivity_info"], {}), {})
@@ -245,14 +222,14 @@ resource "aws_msk_cluster" "msk-cluster" {
           ebs_storage_info {
 
             dynamic "provisioned_throughput" {
-              for_each = [ try(coalesce(broker_node_group_info.value["ebs_storage_info"]["provisioned_throughput"],{}),{}) ]
+              for_each = try(coalesce(broker_node_group_info.value["ebs_storage_info"]["provisioned_throughput"],{}),{})
               content {
                 enabled           = provisioned_throughput.value["enabled"]
                 volume_throughput = provisioned_throughput.value["volume_throughput"]
               } 
             }
 
-            volume_size = storage_info.value["ebs_storage_info"]["volume_size"]
+            volume_size = storage_info.value["volume_size"]
           }
         }
       }

@@ -199,6 +199,7 @@ variable "msk_config" {
               )
               create                   = optional(bool, true)
               enhanced_monitoring      = optional(string, "PER_BROKER") #"DEFAULT"|"PER_BROKER"|"PER_TOPIC_PER_BROKER"|"PER_TOPIC_PER_PARTITION",
+              port                     = optional(string, 9094)
               encryption_info = optional(
                 object(
                   {
@@ -451,6 +452,11 @@ variable "msk_config" {
                 ]
               ) 
               storage_mode             = optional(string, "LOCAL")
+              msk_configuration         = optional(string, <<PROPERTIES
+              auto.create.topics.enable = true
+              delete.topic.enable = true
+              PROPERTIES    
+              )
               tags                     = optional(map(string))
               vpc_connection           = optional(
                 set(
