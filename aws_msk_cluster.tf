@@ -67,7 +67,7 @@ resource "aws_msk_cluster" "msk-cluster" {
     ) : []
     
     content {
-      arn      = configuration_info.value["arn"]
+      arn      = coalesce(configuration_info.value["arn"], aws_msk_configuration.msk-config[each.key].arn)
       revision = configuration_info.value["revision"]
     }
   }
@@ -75,20 +75,24 @@ resource "aws_msk_cluster" "msk-cluster" {
   dynamic "encryption_info" {
     for_each = try(
       coalesce(
-        each.value["cluster"]["encryption_info"],
-        {}
+        toset(
+          [
+            each.value["cluster"]["encryption_info"]
+          ]
+        ),
+        []
       ),
-      {}
+      []
     )
     content {
       dynamic "encryption_in_transit" {
-        for_each = try(coalesce(encryption_info.value["encryption_in_transit"], {}), {})
+        for_each = try(coalesce(toset([encryption_info.value["encryption_in_transit"]]), []), [])
         content {
           client_broker = encryption_in_transit.value["client_broker"]
           in_cluster    = encryption_in_transit.value["in_cluster"]
         }
       }
-      encryption_at_rest_kms_key_arn = encryption_info.value["encryption_at_rest_kms_key_arn"]
+      encryption_at_rest_kms_key_arn = coalesce(encryption_info.value["encryption_at_rest_kms_key_arn"], module.kms.kms_key[format("msk-%s", each.key)].arn)
     }
   }
 
@@ -166,19 +170,6 @@ resource "aws_msk_cluster" "msk-cluster" {
     #############
     content {
       az_distribution = broker_node_group_info.value["az_distribution"]
-      connectivity_info {
-        vpc_connectivity {
-          client_authentication {
-            sasl {
-              iam   = true
-              scram = true
-            }
-          }
-        }
-        public_access {
-          type = "DISABLED"
-        }
-      }
 
       dynamic "connectivity_info" {
         for_each = try(coalesce(broker_node_group_info.value["connectivity_info"], {}), {})
