@@ -67,7 +67,7 @@ resource "aws_msk_cluster" "msk-cluster" {
     ) : []
     
     content {
-      arn      = configuration_info.value["arn"]
+      arn      = coalesce(configuration_info.value["arn"], aws_msk_configuration.msk-config[each.key].arn)
       revision = configuration_info.value["revision"]
     }
   }
