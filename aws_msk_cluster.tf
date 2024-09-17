@@ -230,13 +230,13 @@ resource "aws_msk_cluster" "msk-cluster" {
       )
 
       dynamic "storage_info" {
-        for_each = try(coalesce(broker_node_group_info.value["storage_info"], {}), {})
+        for_each = try(coalesce(toset([broker_node_group_info.value["storage_info"]]), []), [])
 
         content {
           ebs_storage_info {
 
             dynamic "provisioned_throughput" {
-              for_each = [ try(coalesce(broker_node_group_info.value["ebs_storage_info"]["provisioned_throughput"],{}),{}) ]
+              for_each = try(coalesce(toset([storage_info.value["ebs_storage_info"]["provisioned_throughput"]]),[]),[])
               content {
                 enabled           = provisioned_throughput.value["enabled"]
                 volume_throughput = provisioned_throughput.value["volume_throughput"]
