@@ -92,7 +92,7 @@ resource "aws_msk_cluster" "msk-cluster" {
           in_cluster    = encryption_in_transit.value["in_cluster"]
         }
       }
-      encryption_at_rest_kms_key_arn = encryption_info.value["encryption_at_rest_kms_key_arn"]
+      encryption_at_rest_kms_key_arn = coalesce(encryption_info.value["encryption_at_rest_kms_key_arn"], module.kms.kms_key[format("msk-%s", each.key)].arn)
     }
   }
 
