@@ -170,19 +170,6 @@ resource "aws_msk_cluster" "msk-cluster" {
     #############
     content {
       az_distribution = broker_node_group_info.value["az_distribution"]
-      connectivity_info {
-        vpc_connectivity {
-          client_authentication {
-            sasl {
-              iam   = true
-              scram = true
-            }
-          }
-        }
-        public_access {
-          type = "DISABLED"
-        }
-      }
 
       dynamic "connectivity_info" {
         for_each = try(coalesce(broker_node_group_info.value["connectivity_info"], {}), {})
