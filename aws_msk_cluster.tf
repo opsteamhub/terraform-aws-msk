@@ -75,14 +75,18 @@ resource "aws_msk_cluster" "msk-cluster" {
   dynamic "encryption_info" {
     for_each = try(
       coalesce(
-        each.value["cluster"]["encryption_info"],
-        {}
+        toset(
+          [
+            each.value["cluster"]["encryption_info"]
+          ]
+        ),
+        []
       ),
-      {}
+      []
     )
     content {
       dynamic "encryption_in_transit" {
-        for_each = try(coalesce(encryption_info.value["encryption_in_transit"], {}), {})
+        for_each = try(coalesce(toset([encryption_info.value["encryption_in_transit"]]), []), [])
         content {
           client_broker = encryption_in_transit.value["client_broker"]
           in_cluster    = encryption_in_transit.value["in_cluster"]
