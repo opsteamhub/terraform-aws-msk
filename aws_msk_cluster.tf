@@ -236,7 +236,11 @@ resource "aws_msk_cluster" "msk-cluster" {
           ebs_storage_info {
 
             dynamic "provisioned_throughput" {
-              for_each = try(coalesce(toset([storage_info.value["ebs_storage_info"]["provisioned_throughput"]]),[]),[])
+              for_each = storage_info.value["ebs_storage_info"]["provisioned_throughput"] != null ? toset(
+                [
+                  storage_info.value["ebs_storage_info"]["provisioned_throughput"]
+                ]
+              ) : []
               content {
                 enabled           = provisioned_throughput.value["enabled"]
                 volume_throughput = provisioned_throughput.value["volume_throughput"]

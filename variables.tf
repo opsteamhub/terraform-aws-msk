@@ -138,7 +138,7 @@ variable "msk_config" {
                                   object(
                                     {
                                       enabled           = optional(bool, false)
-                                      volume_throughput = optional(string, 250)
+                                      volume_throughput = optional(string)
                                     }
                                   )
                                 )
