@@ -103,18 +103,18 @@ resource "aws_msk_cluster" "msk-cluster" {
   #* length(each.value["cluster"]["broker_node_group_info"]["client_subnets"])
 
   dynamic "open_monitoring" {
-    for_each = try(coalesce(each.value["open_monitoring"], {}), {})
+    for_each = try(coalesce(toset([each.value["cluster"]["open_monitoring"]]), []), [])
     content {
       prometheus {
 
         dynamic "jmx_exporter" {
-          for_each = open_monitoring.value["jmx_exporter"]
+          for_each = try(coalesce(toset([open_monitoring.value["prometheus"]["jmx_exporter"]]), []), [])
           content {
             enabled_in_broker = jmx_exporter.value["enabled_in_broker"]
           }
         }
         dynamic "node_exporter" {
-          for_each = open_monitoring.value["node_exporter"]
+          for_each = try(coalesce(toset([open_monitoring.value["prometheus"]["node_exporter"]]), []), [])
           content {
             enabled_in_broker = node_exporter.value["enabled_in_broker"]
           }
