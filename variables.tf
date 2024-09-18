@@ -199,6 +199,7 @@ variable "msk_config" {
               )
               create                   = optional(bool, true)
               enhanced_monitoring      = optional(string, "PER_BROKER") #"DEFAULT"|"PER_BROKER"|"PER_TOPIC_PER_BROKER"|"PER_TOPIC_PER_PARTITION",
+              port                     = optional(string, 9094)
               encryption_info = optional(
                 object(
                   {
