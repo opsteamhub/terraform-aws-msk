@@ -452,6 +452,11 @@ variable "msk_config" {
                 ]
               ) 
               storage_mode             = optional(string, "LOCAL")
+              msk_configuration         = optional(string, <<PROPERTIES
+              auto.create.topics.enable = true
+              delete.topic.enable = true
+              PROPERTIES    
+              )
               tags                     = optional(map(string))
               vpc_connection           = optional(
                 set(
