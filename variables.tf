@@ -464,11 +464,11 @@ variable "msk_config" {
                     {
                       authentication      = optional(string, "SASL_IAM")
                       create              = optional(bool, true)
-                      client_subnets      = optional(set(string), ["subnet-098c9b31dccd66c4b","subnet-051d585c3a58c93bc","subnet-087a144f11a0622bc",])
-                      security_groups     = optional(set(string), ["sg-0a5ff729e982659d5"])
+                      client_subnets      = optional(set(string))
+                      security_groups     = optional(set(string))
                       tags                = optional(map(string))
                       target_cluster_arn  = optional(string)
-                      vpc_id              = optional(string, "vpc-06f56828a577ed1a7")
+                      vpc_id              = optional(string)
                     }
                   )
                 ),
