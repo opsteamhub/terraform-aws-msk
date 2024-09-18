@@ -125,26 +125,26 @@ resource "aws_msk_cluster" "msk-cluster" {
   }
 
   dynamic "logging_info" {
-    for_each = try(coalesce(each.value["logging_info"], {}), {})
+    for_each = try(coalesce(toset([each.value["cluster"]["logging_info"]]), []), [])
     content {
       broker_logs {
 
         dynamic "cloudwatch_logs" {
-          for_each = try(coalesce(logging_info.value["broker_logs"]["cloudwatch_logs"], {}), {})
+          for_each = try(coalesce(toset([logging_info.value["broker_logs"]["cloudwatch_logs"]]), []), [])
           content {
             enabled   = cloudwatch_logs.value["enabled"]
             log_group = cloudwatch_logs.value["log_group"]
           }
         }
         dynamic "firehose" {
-          for_each = try(coalesce(logging_info.value["broker_logs"]["firehose"], {}), {})
+          for_each = try(coalesce(toset([logging_info.value["broker_logs"]["firehose"]]), []), [])
           content {
             enabled         = firehose.value["enabled"]
-            delivery_stream = firehose.value["log_group"]
+            delivery_stream = firehose.value["delivery_stream"]
           }
         }
         dynamic "s3" {
-          for_each = try(coalesce(logging_info.value["broker_logs"]["s3"], {}), {})
+          for_each = try(coalesce(toset([logging_info.value["broker_logs"]["s3"]]), []), [])
           content {
             enabled         = s3.value["enabled"]
             bucket          = s3.value["bucket"]
