@@ -103,18 +103,18 @@ resource "aws_msk_cluster" "msk-cluster" {
   #* length(each.value["cluster"]["broker_node_group_info"]["client_subnets"])
 
   dynamic "open_monitoring" {
-    for_each = try(coalesce(each.value["open_monitoring"], {}), {})
+    for_each = try(coalesce(toset([each.value["cluster"]["open_monitoring"]]), []), [])
     content {
       prometheus {
 
         dynamic "jmx_exporter" {
-          for_each = open_monitoring.value["jmx_exporter"]
+          for_each = try(coalesce(toset([open_monitoring.value["prometheus"]["jmx_exporter"]]), []), [])
           content {
             enabled_in_broker = jmx_exporter.value["enabled_in_broker"]
           }
         }
         dynamic "node_exporter" {
-          for_each = open_monitoring.value["node_exporter"]
+          for_each = try(coalesce(toset([open_monitoring.value["prometheus"]["node_exporter"]]), []), [])
           content {
             enabled_in_broker = node_exporter.value["enabled_in_broker"]
           }
@@ -125,26 +125,26 @@ resource "aws_msk_cluster" "msk-cluster" {
   }
 
   dynamic "logging_info" {
-    for_each = try(coalesce(each.value["logging_info"], {}), {})
+    for_each = try(coalesce(toset([each.value["cluster"]["logging_info"]]), []), [])
     content {
       broker_logs {
 
         dynamic "cloudwatch_logs" {
-          for_each = try(coalesce(logging_info.value["broker_logs"]["cloudwatch_logs"], {}), {})
+          for_each = try(coalesce(toset([logging_info.value["broker_logs"]["cloudwatch_logs"]]), []), [])
           content {
             enabled   = cloudwatch_logs.value["enabled"]
             log_group = cloudwatch_logs.value["log_group"]
           }
         }
         dynamic "firehose" {
-          for_each = try(coalesce(logging_info.value["broker_logs"]["firehose"], {}), {})
+          for_each = try(coalesce(toset([logging_info.value["broker_logs"]["firehose"]]), []), [])
           content {
             enabled         = firehose.value["enabled"]
-            delivery_stream = firehose.value["log_group"]
+            delivery_stream = firehose.value["delivery_stream"]
           }
         }
         dynamic "s3" {
-          for_each = try(coalesce(logging_info.value["broker_logs"]["s3"], {}), {})
+          for_each = try(coalesce(toset([logging_info.value["broker_logs"]["s3"]]), []), [])
           content {
             enabled         = s3.value["enabled"]
             bucket          = s3.value["bucket"]
@@ -230,13 +230,13 @@ resource "aws_msk_cluster" "msk-cluster" {
       )
 
       dynamic "storage_info" {
-        for_each = try(coalesce(broker_node_group_info.value["storage_info"], {}), {})
+        for_each = try(coalesce(toset([broker_node_group_info.value["storage_info"]]), []), [])
 
         content {
           ebs_storage_info {
 
             dynamic "provisioned_throughput" {
-              for_each = [ try(coalesce(broker_node_group_info.value["ebs_storage_info"]["provisioned_throughput"],{}),{}) ]
+              for_each = try(coalesce(toset([storage_info.value["ebs_storage_info"]["provisioned_throughput"]]),[]),[])
               content {
                 enabled           = provisioned_throughput.value["enabled"]
                 volume_throughput = provisioned_throughput.value["volume_throughput"]
