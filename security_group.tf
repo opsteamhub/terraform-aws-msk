@@ -43,19 +43,22 @@ module "msk-sg" {
   vpc_config = {
     vpc = {
       create = false
-      id     = coalesce(
-        coalescelist(
-          data.aws_vpcs.msk-vpc[each.key].ids,
-          data.aws_vpcs.default-msk-vpc[each.key].ids,
+      vpc_id = coalesce(
+        try(
+          element(
+            data.aws_vpcs.msk-vpc[each.key].ids,
+            0
+          ),
+          null
         ),
-        toset(
-          [
-            try(
-              each.value["common"]["vpc_config"]["vpc_id"],
-              null
-            )
-          ]
-        )
+        try(
+          element(
+            data.aws_vpcs.default-msk-vpc[each.key].ids,
+            0
+          ),
+          null
+        ),
+        each.value["common"]["vpc_config"]["vpc_id"]
       )
     }
     security_groups = toset(  
