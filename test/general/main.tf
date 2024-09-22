@@ -41,7 +41,7 @@ module "msk_general_config" {
                 }
               }             
             ]
-            replicator_name = "teste2"
+            replicator_name = "teste3"
             replication_info_list = {
               source_kafka_cluster_name = "order"
               target_kafka_cluster_name = "order2"

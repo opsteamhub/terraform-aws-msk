@@ -200,7 +200,7 @@ data "aws_iam_policy_document" "default-msk-replicator-assume-role-policy" {
 #
 # The default AssumeRole Policy to be attached in the MSK Replicator.
 #
-data "aws_iam_policy_document" "default-msl-replicator-policy" {
+data "aws_iam_policy_document" "default-msk-replicator-policy" {
 
   for_each = zipmap(
     flatten(
@@ -263,9 +263,11 @@ data "aws_iam_policy_document" "default-msl-replicator-policy" {
   version= "2012-10-17"
 
   statement {
+    sid = "ClusterPermissions"
     actions = [
       "kafka-cluster:Connect",
-      "kafka-cluster:DescribeCluster"
+      "kafka-cluster:DescribeCluster",
+      "kafka-cluster:WriteDataIdempotently"
     ]
     effect = "Allow"
     resources = [
@@ -313,15 +315,105 @@ data "aws_iam_policy_document" "default-msl-replicator-policy" {
   }
 
   statement {
+    sid = "ReadPermissions"
     actions = [
       "kafka-cluster:ReadData",
       "kafka-cluster:DescribeTopic",
-      "kafka-cluster:WriteData",
-      "kafka-cluster:CreateTopic",
-      "kafka-cluster:AlterTopic",
-      "kafka-cluster:AlterCluster",
-      "kafka-cluster:DescribeTopicDynamicConfiguration",
-      "kafka-cluster:AlterTopicDynamicConfiguration"
+    ]
+    effect = "Allow"
+    resources = [
+      format("%s", 
+        try(
+          data.aws_msk_cluster.msk-cluster-for-replicator[
+            format(
+              "%s-%s-%s",
+              each.value["msk_cluster_name"],
+              each.value["replicator_name"],
+              each.value["replication_info_list"]["source_kafka_cluster_name"]
+            )
+          ].arn,
+          data.aws_msk_cluster.msk-cluster-for-replicator-remoteregion[
+            format(
+              "%s-%s-%s",
+              each.value["msk_cluster_name"],
+              each.value["replicator_name"],
+              each.value["replication_info_list"]["source_kafka_cluster_name"]
+            )
+          ].arn
+        )
+      ),
+      format("%s",
+        try(
+          data.aws_msk_cluster.msk-cluster-for-replicator[
+            format(
+              "%s-%s-%s",
+              each.value["msk_cluster_name"],
+              each.value["replicator_name"],
+              each.value["replication_info_list"]["target_kafka_cluster_name"]
+            )
+          ].arn,
+          data.aws_msk_cluster.msk-cluster-for-replicator-remoteregion[
+            format(
+              "%s-%s-%s",
+              each.value["msk_cluster_name"],
+              each.value["replicator_name"],
+              each.value["replication_info_list"]["target_kafka_cluster_name"]
+            )
+          ].arn
+        )
+      ),
+      format("arn:aws:kafka:%s:%s:topic/%s/*",
+        data.aws_region.session.name,
+        data.aws_caller_identity.session.account_id,
+        try(  
+          data.aws_msk_cluster.msk-cluster-for-replicator[
+            format(
+              "%s-%s-%s",
+              each.value["msk_cluster_name"],
+              each.value["replicator_name"],
+              each.value["replication_info_list"]["source_kafka_cluster_name"]
+            )
+          ].cluster_name,
+          data.aws_msk_cluster.msk-cluster-for-replicator-remoteregion[
+            format(
+              "%s-%s-%s",
+              each.value["msk_cluster_name"],
+              each.value["replicator_name"],
+              each.value["replication_info_list"]["source_kafka_cluster_name"]
+            )
+          ].cluster_name,
+        )
+      ),
+      format("arn:aws:kafka:%s:%s:topic/%s/*",
+        data.aws_region.session.name,
+        data.aws_caller_identity.session.account_id,
+        try(
+          data.aws_msk_cluster.msk-cluster-for-replicator[
+            format(
+              "%s-%s-%s",
+              each.value["msk_cluster_name"],
+              each.value["replicator_name"],
+              each.value["replication_info_list"]["target_kafka_cluster_name"]
+            )
+          ].cluster_name,
+          data.aws_msk_cluster.msk-cluster-for-replicator-remoteregion[
+            format(
+              "%s-%s-%s",
+              each.value["msk_cluster_name"],
+              each.value["replicator_name"],
+              each.value["replication_info_list"]["target_kafka_cluster_name"]
+            )
+          ].cluster_name,
+        )
+      )
+    ]
+  }
+
+ statement {
+    sid = "WritePermissions"
+    actions = [
+      "kafka-cluster:DescribeTopic",
+      "kafka-cluster:WriteData"
     ]
     effect = "Allow"
     resources = [
@@ -413,9 +505,202 @@ data "aws_iam_policy_document" "default-msl-replicator-policy" {
   }
 
   statement {
+    sid = "CreateTopicPermissions"
     actions = [
-	  "kafka-cluster:AlterGroup",
+      "kafka-cluster:ReadData",
+      "kafka-cluster:DescribeTopic",
+      "kafka-cluster:WriteData",
+      "kafka-cluster:CreateTopic"
+    ]
+    effect = "Allow"
+    resources = [
+      format("%s", 
+        try(
+          data.aws_msk_cluster.msk-cluster-for-replicator[
+            format(
+              "%s-%s-%s",
+              each.value["msk_cluster_name"],
+              each.value["replicator_name"],
+              each.value["replication_info_list"]["source_kafka_cluster_name"]
+            )
+          ].arn,
+          data.aws_msk_cluster.msk-cluster-for-replicator-remoteregion[
+            format(
+              "%s-%s-%s",
+              each.value["msk_cluster_name"],
+              each.value["replicator_name"],
+              each.value["replication_info_list"]["source_kafka_cluster_name"]
+            )
+          ].arn
+        )
+      ),
+      format("%s",
+        try(
+          data.aws_msk_cluster.msk-cluster-for-replicator[
+            format(
+              "%s-%s-%s",
+              each.value["msk_cluster_name"],
+              each.value["replicator_name"],
+              each.value["replication_info_list"]["target_kafka_cluster_name"]
+            )
+          ].arn,
+          data.aws_msk_cluster.msk-cluster-for-replicator-remoteregion[
+            format(
+              "%s-%s-%s",
+              each.value["msk_cluster_name"],
+              each.value["replicator_name"],
+              each.value["replication_info_list"]["target_kafka_cluster_name"]
+            )
+          ].arn
+        )
+      ),
+      format("arn:aws:kafka:%s:%s:topic/%s/*",
+        data.aws_region.session.name,
+        data.aws_caller_identity.session.account_id,
+        try(  
+          data.aws_msk_cluster.msk-cluster-for-replicator[
+            format(
+              "%s-%s-%s",
+              each.value["msk_cluster_name"],
+              each.value["replicator_name"],
+              each.value["replication_info_list"]["source_kafka_cluster_name"]
+            )
+          ].cluster_name,
+          data.aws_msk_cluster.msk-cluster-for-replicator-remoteregion[
+            format(
+              "%s-%s-%s",
+              each.value["msk_cluster_name"],
+              each.value["replicator_name"],
+              each.value["replication_info_list"]["source_kafka_cluster_name"]
+            )
+          ].cluster_name,
+        )
+      ),
+      format("arn:aws:kafka:%s:%s:topic/%s/*",
+        data.aws_region.session.name,
+        data.aws_caller_identity.session.account_id,
+        try(
+          data.aws_msk_cluster.msk-cluster-for-replicator[
+            format(
+              "%s-%s-%s",
+              each.value["msk_cluster_name"],
+              each.value["replicator_name"],
+              each.value["replication_info_list"]["target_kafka_cluster_name"]
+            )
+          ].cluster_name,
+          data.aws_msk_cluster.msk-cluster-for-replicator-remoteregion[
+            format(
+              "%s-%s-%s",
+              each.value["msk_cluster_name"],
+              each.value["replicator_name"],
+              each.value["replication_info_list"]["target_kafka_cluster_name"]
+            )
+          ].cluster_name,
+        )
+      )
+    ]
+  }  
+
+  statement {
+    sid = "GroupPermissions"
+    actions = [
+	    "kafka-cluster:AlterGroup",
       "kafka-cluster:DescribeGroup",
+    ]
+    effect = "Allow"
+    resources = [
+      format("%s", 
+        try(
+          data.aws_msk_cluster.msk-cluster-for-replicator[
+            format(
+              "%s-%s-%s",
+              each.value["msk_cluster_name"],
+              each.value["replicator_name"],
+              each.value["replication_info_list"]["source_kafka_cluster_name"]
+            )
+          ].arn,
+          data.aws_msk_cluster.msk-cluster-for-replicator-remoteregion[
+            format(
+              "%s-%s-%s",
+              each.value["msk_cluster_name"],
+              each.value["replicator_name"],
+              each.value["replication_info_list"]["source_kafka_cluster_name"]
+            )
+          ].arn,
+        )
+      ),
+      format("%s",
+        try(
+          data.aws_msk_cluster.msk-cluster-for-replicator[
+            format(
+              "%s-%s-%s",
+              each.value["msk_cluster_name"],
+              each.value["replicator_name"],
+              each.value["replication_info_list"]["target_kafka_cluster_name"]
+            )
+          ].arn,
+          data.aws_msk_cluster.msk-cluster-for-replicator-remoteregion[
+            format(
+              "%s-%s-%s",
+              each.value["msk_cluster_name"],
+              each.value["replicator_name"],
+              each.value["replication_info_list"]["target_kafka_cluster_name"]
+            )
+          ].arn,
+        )
+      ),
+      format("arn:aws:kafka:%s:%s:group/%s/*",
+        data.aws_region.session.name,
+        data.aws_caller_identity.session.account_id,
+        try(
+          data.aws_msk_cluster.msk-cluster-for-replicator[
+            format(
+              "%s-%s-%s",
+              each.value["msk_cluster_name"],
+              each.value["replicator_name"],
+              each.value["replication_info_list"]["source_kafka_cluster_name"]
+            )
+          ].cluster_name,
+          data.aws_msk_cluster.msk-cluster-for-replicator-remoteregion[
+            format(
+              "%s-%s-%s",
+              each.value["msk_cluster_name"],
+              each.value["replicator_name"],
+              each.value["replication_info_list"]["source_kafka_cluster_name"]
+            )
+          ].cluster_name,          
+        )
+      ),
+      format("arn:aws:kafka:%s:%s:group/%s/*",
+        data.aws_region.session.name,
+        data.aws_caller_identity.session.account_id,
+        try(
+          data.aws_msk_cluster.msk-cluster-for-replicator[
+            format(
+              "%s-%s-%s",
+              each.value["msk_cluster_name"],
+              each.value["replicator_name"],
+              each.value["replication_info_list"]["target_kafka_cluster_name"]
+            )
+          ].cluster_name,
+          data.aws_msk_cluster.msk-cluster-for-replicator-remoteregion[
+            format(
+              "%s-%s-%s",
+              each.value["msk_cluster_name"],
+              each.value["replicator_name"],
+              each.value["replication_info_list"]["target_kafka_cluster_name"]
+            )
+          ].tags["sg_id"],
+        )
+      )
+    ]
+  }
+
+  statement {
+    sid = "AlterOperationPermissions"
+    actions = [
+      "kafka-cluster:AlterTopic",
+      "kafka-cluster:AlterCluster"
     ]
     effect = "Allow"
     resources = [
@@ -569,10 +854,10 @@ resource "aws_iam_role" "msk-replicator-iamrole" {
   assume_role_policy    = data.aws_iam_policy_document.default-msk-replicator-assume-role-policy.json
   description           = format("MSK Replicator for MSK - %s", each.value["msk_cluster_name"])
   force_detach_policies = true
-  ##inline_policy {
-  ##  name   = "MSKReplicatorPolicy"
-  ##  policy = data.aws_iam_policy_document.default-msl-replicator-policy[each.key].json
-  ##}
+  inline_policy {
+    name   = "MSKReplicatorPolicy"
+    policy = data.aws_iam_policy_document.default-msk-replicator-policy[each.key].json
+  }
   name                  = format("msk-replicator-%s-%s@%s", each.value["msk_cluster_name"], each.value["replicator_name"], time_static.msk-timestamp[each.value["msk_cluster_name"]].unix)
   path                  = "/system/database/"
   #tags =
@@ -1975,10 +2260,12 @@ resource "aws_msk_replicator" "msk-replicator" {
 
   replicator_name            = each.value["replicator_name"]
   
-  service_execution_role_arn = coalesce(
-    each.value["service_execution_role_arn"],
-    aws_iam_role.msk-replicator-iamrole[each.key].arn
-  )
+  service_execution_role_arn =     aws_iam_role.msk-replicator-iamrole[each.key].arn
+
+#coalesce(
+#    each.value["service_execution_role_arn"],
+#    aws_iam_role.msk-replicator-iamrole[each.key].arn
+#  )
 }
 
 
