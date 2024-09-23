@@ -2260,12 +2260,10 @@ resource "aws_msk_replicator" "msk-replicator" {
 
   replicator_name            = each.value["replicator_name"]
   
-  service_execution_role_arn =     aws_iam_role.msk-replicator-iamrole[each.key].arn
-
-#coalesce(
-#    each.value["service_execution_role_arn"],
-#    aws_iam_role.msk-replicator-iamrole[each.key].arn
-#  )
+  service_execution_role_arn = coalesce(
+    each.value["service_execution_role_arn"],
+    aws_iam_role.msk-replicator-iamrole[each.key].arn
+  )
 }
 
 
