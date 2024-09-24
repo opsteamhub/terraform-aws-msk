@@ -73,7 +73,6 @@ module "msk_cluster" {
 
               provisioned_throughput = {
                 enabled           = false
-                volume_throughput = 300
               }
             }
           }
