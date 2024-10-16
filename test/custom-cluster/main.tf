@@ -1,7 +1,7 @@
 locals {
   cluster_name = "custom-cluster"
   number_of_broker_nodes = 3
-  vpc_id = "vpc-1234"
+  #vpc_id = "vpc-1234"
 }
 
 module "msk_cluster" {
@@ -11,7 +11,7 @@ module "msk_cluster" {
       common = {
         vpc_config = {
           create_security_group = true
-          vpc_id = local.vpc_id
+          #vpc_id = local.vpc_id
           security_group_rules = {
             name        = local.cluster_name
             description = "Security group for MSK"
