@@ -2,6 +2,7 @@ name: terraform-plan-report
 
 on:
   pull_request:
+    types: [opened, synchronize, reopened]
 
 jobs:
   terraform-plan:
