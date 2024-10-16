@@ -40,3 +40,5 @@ jobs:
           terraform-text: ${{ github.workspace }}/terraform.text
           #terraform-json: ${{ github.workspace }}/terraform.json
           remove-stale-reports: true
+
+      #teste
